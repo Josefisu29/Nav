@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AFIT Campus Nav – Student</title>
+    <link rel="manifest" href="manifest.json" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                50: "#eff6ff",
+                100: "#dbeafe",
+                200: "#bfdbfe",
+                300: "#93c5fd",
+                400: "#60a5fa",
+                500: "#3b82f6",
+                600: "#2563eb",
+                700: "#1d4ed8",
+                800: "#1e40af",
+                900: "#1e3a8a",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .tab {
+        display: none;
+      }
+      .tab.active {
+        display: block;
+      }
+      #map,
+      #student-map {
+        height: 300px;
+        width: 100%;
+        border-radius: 8px;
+      }
+      .loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .fade-in {
+        animation: fadeIn 0.3s ease-in;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .feedback-card {
+        transition: transform 0.2s ease;
+      }
+      .feedback-card:hover {
+        transform: translateY(-2px);
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50">
+    <div class="min-h-screen flex">
+      <!-- Sidebar -->
+      <div
+        class="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col"
+      >
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Student Portal</h1>
+            <button
+              id="btn-logout"
+              class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              Log Out
+            </button>
+          </div>
+
+          <!-- Navigation -->
+          <nav class="space-y-2">
+            <button
+              id="tab-dash"
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+            >
+              📊 Dashboard
+            </button>
+            <button
+              id="tab-map"
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+            >
+              🗺️ Campus Map
+            </button>
+            <button
+              id="tab-detail"
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+            >
+              🏢 Building Detail
+            </button>
+            <button
+              id="tab-events"
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+            >
+              📅 All Events
+            </button>
+            <button
+              id="tab-sched"
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+            >
+              📋 My Schedule
+            </button>
+            <button
+              id="tab-profile"
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+            >
+              👤 Profile
+            </button>
+            <button
+              id="tab-feedback"
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium"
+            >
+              💬 Feedback
+            </button>
+          </nav>
+        </div>
+
+        <!-- Content Area -->
+        <div class="px-6 pb-6 flex-1 overflow-y-auto">
+          <!-- DASHBOARD -->
+          <div id="dash" class="tab space-y-6">
+            <div
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            >
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                Next Event
+              </h3>
+              <div
+                id="student-next-event"
+                class="bg-blue-50 border border-blue-200 rounded-lg p-4"
+              >
+                <div class="animate-pulse">
+                  <div class="h-4 bg-blue-200 rounded w-3/4 mb-2"></div>
+                  <div class="h-3 bg-blue-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            >
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                Recent Notifications
+              </h3>
+              <ul id="student-notifications" class="space-y-3">
+                <li class="animate-pulse">
+                  <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div class="h-3 bg-gray-200 rounded w-2/3"></div>
+                </li>
+              </ul>
+            </div>
+
+            <div
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            >
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                Quick Actions
+              </h3>
+              <div class="grid grid-cols-2 gap-3">
+                <button
+                  id="btn-report-issue"
+                  class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  🚨 Report Issue
+                </button>
+                <button
+                  id="btn-find-building"
+                  class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  🏢 Find Building
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- CAMPUS MAP -->
+          <div id="map" class="tab">
+            <div
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            >
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                Campus Map
+              </h3>
+              <div id="student-map" class="mb-4"></div>
+              <p class="text-sm text-gray-600 text-center">
+                Click on building markers for details
+              </p>
+            </div>
+          </div>
+
+          <!-- BUILDING DETAIL -->
+          <div id="detail" class="tab">
+            <div
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            >
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                Building Details
+              </h3>
+              <div
+                id="detail-carousel"
+                class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4"
+              >
+                <p class="font-medium text-gray-800">
+                  <strong id="detail-name">Select a building on the map</strong>
+                </p>
+              </div>
+              <p id="detail-desc" class="text-gray-600 mb-4">
+                Select a building on the map
+              </p>
+              <a
+                id="detail-floorplan"
+                href="#"
+                target="_blank"
+                class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors mb-4"
+              >
+                📄 Download Floor Plan
+              </a>
+              <h4 class="text-md font-semibold text-gray-800 mb-3">
+                Upcoming Events
+              </h4>
+              <ul id="detail-upcoming-events" class="space-y-2">
+                <li class="animate-pulse">
+                  <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div class="h-3 bg-gray-200 rounded w-2/3"></div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- ALL EVENTS -->
+          <div id="events" class="tab">
+            <div
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            >
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                All Events
+              </h3>
+              <input
+                id="event-search"
+                placeholder="Search events..."
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
+              />
+              <ul id="event-list" class="space-y-3">
+                <li class="animate-pulse">
+                  <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div class="h-3 bg-gray-200 rounded w-2/3"></div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- MY SCHEDULE -->
+          <div id="sched" class="tab">
+            <div
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            >
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                My Schedule
+              </h3>
+              <ul id="schedule-list" class="space-y-3">
+                <li class="animate-pulse">
+                  <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div class="h-3 bg-gray-200 rounded w-2/3"></div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- PROFILE -->
+          <div id="profile" class="tab">
+            <div
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            >
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                My Profile
+              </h3>
+
+              <!-- Profile Info Display -->
+              <div id="profile-info" class="bg-gray-50 rounded-lg p-4 mb-6">
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div class="text-gray-600">
+                    Email:
+                    <span
+                      class="font-medium text-gray-800"
+                      id="profile-email"
+                    ></span>
+                  </div>
+                  <div class="text-gray-600">
+                    Role:
+                    <span
+                      class="font-medium text-gray-800"
+                      id="profile-role"
+                    ></span>
+                  </div>
+                  <div class="text-gray-600">
+                    Student ID:
+                    <span
+                      class="font-medium text-gray-800"
+                      id="profile-student-id"
+                    ></span>
+                  </div>
+                  <div class="text-gray-600">
+                    Member since:
+                    <span
+                      class="font-medium text-gray-800"
+                      id="profile-created"
+                    ></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Full Name *</label
+                  >
+                  <input
+                    id="profile-name"
+                    placeholder="Full Name"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Phone Number</label
+                  >
+                  <input
+                    id="profile-phone"
+                    placeholder="Phone Number"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Department</label
+                  >
+                  <select
+                    id="profile-department"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Department</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Electrical Engineering">
+                      Electrical Engineering
+                    </option>
+                    <option value="Mechanical Engineering">
+                      Mechanical Engineering
+                    </option>
+                    <option value="Civil Engineering">Civil Engineering</option>
+                    <option value="Aeronautical Engineering">
+                      Aeronautical Engineering
+                    </option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Economics">Economics</option>
+                    <option value="Management">Management</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Level/Year</label
+                  >
+                  <select
+                    id="profile-level"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Level</option>
+                    <option value="100">100 Level</option>
+                    <option value="200">200 Level</option>
+                    <option value="300">300 Level</option>
+                    <option value="400">400 Level</option>
+                    <option value="500">500 Level</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Matric Number</label
+                  >
+                  <input
+                    id="profile-matric"
+                    placeholder="Matric Number"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Emergency Contact</label
+                  >
+                  <input
+                    id="profile-emergency"
+                    placeholder="Emergency Contact Name & Phone"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Address</label
+                  >
+                  <textarea
+                    id="profile-address"
+                    rows="2"
+                    placeholder="Residential Address"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  ></textarea>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Language Preference</label
+                  >
+                  <select
+                    id="profile-language"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="English">English</option>
+                    <option value="Hausa">Hausa</option>
+                    <option value="Yoruba">Yoruba</option>
+                    <option value="Igbo">Igbo</option>
+                  </select>
+                </div>
+
+                <div class="flex items-center">
+                  <input
+                    id="profile-contrast"
+                    type="checkbox"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    for="profile-contrast"
+                    class="ml-2 block text-sm text-gray-700"
+                    >High Contrast Mode</label
+                  >
+                </div>
+
+                <div class="flex items-center">
+                  <input
+                    id="profile-notifications"
+                    type="checkbox"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    for="profile-notifications"
+                    class="ml-2 block text-sm text-gray-700"
+                    >Enable Push Notifications</label
+                  >
+                </div>
+
+                <button
+                  id="btn-save-profile"
+                  class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Save Profile
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- FEEDBACK -->
+          <div id="feedback" class="tab">
+            <div
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            >
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                Feedback / Incident Report
+              </h3>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Type</label
+                  >
+                  <select
+                    id="feedback-type"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select Type</option>
+                    <option value="general">General Feedback</option>
+                    <option value="maintenance">Maintenance Issue</option>
+                    <option value="security">Security Concern</option>
+                    <option value="facility">Facility Problem</option>
+                    <option value="suggestion">Suggestion</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2"
+                    >Message</label
+                  >
+                  <textarea
+                    id="feedback-text"
+                    rows="4"
+                    placeholder="Your feedback or incident report…"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  ></textarea>
+                </div>
+                <button
+                  id="btn-feedback"
+                  class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Submit Feedback
+                </button>
+              </div>
+              <div id="feedback-history" class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                  Recent Feedback
+                </h3>
+                <ul id="feedback-list" class="space-y-3"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Map Area -->
+      <div class="flex-1">
+        <div id="map-main" class="h-full"></div>
+      </div>
+    </div>
+
+    <!-- Firebase & Maps SDKs -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        updateDoc,
+        collection,
+        query,
+        where,
+        orderBy,
+        limit,
+        getDocs,
+        addDoc,
+        deleteDoc,
+        onSnapshot,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      // Firebase Config
+      const cfg = {
+        apiKey: "AIzaSyCnNj7hLoVHMOsTKJ5YulMAr3xF050HwLg",
+        authDomain: "mycampus-aeeb6.firebaseapp.com",
+        projectId: "mycampus-aeeb6",
+        storageBucket: "mycampus-aeeb6.appspot.com",
+        messagingSenderId: "365444920677",
+        appId: "1:365444920677:web:0d5cdf575fdc1463d01d8c",
+        measurementId: "G-BHSMF8KY90",
+      };
+      const app = initializeApp(cfg);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      // Global State
+      let currentUser = null;
+      let userProfile = null;
+      let studentMap = null;
+      let mainMap = null;
+      let mapMarkers = [];
+      let realTimeListeners = [];
+      // DOM References
+      const tabs = document.querySelectorAll("nav button");
+      const sects = document.querySelectorAll(".tab");
+      const logout = document.getElementById("btn-logout");
+      const mapDiv = document.getElementById("map-main");
+      const feedbackList = document.getElementById("feedback-list");
+      // Auth Guard & Initial Load
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          window.location.href = "first.html";
+          return;
+        }
+        try {
+          currentUser = user;
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (!userDoc.exists() || userDoc.data().role !== "student") {
+            window.location.href = "first.html";
+            return;
+          }
+          userProfile = userDoc.data();
+          await ensureStudentId();
+          setupRealTimeListeners();
+          activateTab("dash");
+          await loadStudentData();
+          updateUserInterface();
+        } catch (error) {
+          console.error("Auth error:", error);
+          showNotification("Authentication error. Please try again.", "error");
+          window.location.href = "first.html";
+        }
+      });
+      // Real-time Listeners Setup
+      function setupRealTimeListeners() {
+        const notificationsListener = onSnapshot(
+          query(
+            collection(db, "notifications"),
+            orderBy("timestamp", "desc"),
+            limit(10)
+          ),
+          (snapshot) => updateNotifications(snapshot.docs),
+          (error) => console.error("Notifications listener error:", error)
+        );
+        const profileListener = onSnapshot(
+          doc(db, "users", currentUser.uid),
+          (doc) => {
+            if (doc.exists()) {
+              userProfile = doc.data();
+              updateUserInterface();
+            }
+          },
+          (error) => console.error("Profile listener error:", error)
+        );
+        const scheduleListener = onSnapshot(
+          query(
+            collection(db, "schedules"),
+            where("userId", "==", currentUser.uid),
+            orderBy("timestamp", "desc")
+          ),
+          (snapshot) => updateSchedule(snapshot.docs),
+          (error) => console.error("Schedule listener error:", error)
+        );
+        const eventsListener = onSnapshot(
+          query(collection(db, "events"), orderBy("start")),
+          (snapshot) => updateEvents(snapshot.docs),
+          (error) => console.error("Events listener error:", error)
+        );
+        realTimeListeners.push(
+          notificationsListener,
+          profileListener,
+          scheduleListener,
+          eventsListener
+        );
+      }
+      // Cleanup Listeners
+      function cleanupListeners() {
+        realTimeListeners.forEach((unsubscribe) => unsubscribe());
+        realTimeListeners = [];
+      }
+      // Tab Navigation
+      tabs.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.id.replace("tab-", "");
+          activateTab(id);
+          switch (id) {
+            case "dash":
+              loadDashboardData();
+              break;
+            case "map":
+              loadBuildingsOnStudentMap();
+              break;
+            case "detail":
+              break;
+            case "events":
+              loadAllEvents();
+              break;
+            case "sched":
+              loadSchedule();
+              break;
+            case "profile":
+              loadProfile();
+              break;
+            case "feedback":
+              loadFeedbackHistory();
+              break;
+          }
+        });
+      });
+      function activateTab(id) {
+        sects.forEach((s) =>
+          s.id === id ? s.classList.add("active") : s.classList.remove("active")
+        );
+        tabs.forEach((btn) => {
+          const btnId = btn.id.replace("tab-", "");
+          if (btnId === id) {
+            btn.classList.add("bg-blue-50", "text-blue-700");
+            btn.classList.remove("text-gray-600");
+          } else {
+            btn.classList.remove("bg-blue-50", "text-blue-700");
+            btn.classList.add("text-gray-600");
+          }
+        });
+      }
+      // Logout Handler
+      logout.addEventListener("click", async () => {
+        try {
+          logout.classList.add("loading");
+          cleanupListeners();
+          await signOut(auth);
+          window.location.href = "first.html";
+        } catch (error) {
+          console.error("Logout error:", error);
+          showNotification("Logout failed. Please try again.", "error");
+        } finally {
+          logout.classList.remove("loading");
+        }
+      });
+      // Map Initialization
+      function initMap() {
+        mainMap = new google.maps.Map(mapDiv, {
+          center: { lat: 10.5264, lng: 7.4388 },
+          zoom: 16,
+          styles: [
+            {
+              featureType: "poi",
+              elementType: "labels",
+              stylers: [{ visibility: "off" }],
+            },
+          ],
+        });
+        initStudentMap();
+      }
+      function initStudentMap() {
+        studentMap = new google.maps.Map(
+          document.getElementById("student-map"),
+          {
+            center: { lat: 10.5264, lng: 7.4388 },
+            zoom: 16,
+            mapTypeId: "satellite",
+            mapTypeControl: true,
+            streetViewControl: false,
+            fullscreenControl: true,
+          }
+        );
+        loadBuildingsOnStudentMap();
+      }
+      // Data Loading Functions
+      async function loadStudentData() {
+        try {
+          showLoadingState(true);
+          await Promise.all([
+            loadDashboardData(),
+            loadBuildingsOnStudentMap(),
+            loadAllEvents(),
+            loadSchedule(),
+            loadProfile(),
+            loadFeedbackHistory(),
+          ]);
+        } catch (error) {
+          console.error("Error loading student data:", error);
+          showNotification(
+            "Failed to load data. Please refresh the page.",
+            "error"
+          );
+        } finally {
+          showLoadingState(false);
+        }
+      }
+      async function loadDashboardData() {
+        try {
+          await Promise.all([
+            loadNextEvent(),
+            loadNotifications(),
+            loadQuickStats(),
+          ]);
+        } catch (error) {
+          console.error("Error loading dashboard data:", error);
+        }
+      }
+      async function loadNextEvent() {
+        try {
+          const now = new Date();
+          const snap = await getDocs(
+            query(
+              collection(db, "events"),
+              where("start", ">=", now.toISOString()),
+              orderBy("start"),
+              limit(1)
+            )
+          );
+          const div = document.getElementById("student-next-event");
+          if (!snap.empty) {
+            const e = snap.docs[0].data();
+            const eventDate = new Date(e.start);
+            const timeUntil = getTimeUntil(eventDate);
+            div.innerHTML = `
+              <div class="fade-in">
+                <div class="font-semibold text-blue-800">${e.title}</div>
+                <div class="text-sm text-blue-600">${eventDate.toLocaleDateString()} at ${eventDate.toLocaleTimeString()}</div>
+                <div class="text-xs text-blue-500 mt-1">${timeUntil}</div>
+                ${
+                  e.location
+                    ? `<div class="text-xs text-blue-500">📍 ${e.location}</div>`
+                    : ""
+                }
+              </div>
+            `;
+          } else {
+            div.innerHTML = `<div class="text-center text-gray-500 italic">No upcoming events</div>`;
+          }
+        } catch (error) {
+          console.error("Error loading next event:", error);
+        }
+      }
+      function updateNotifications(docs) {
+        const ul = document.getElementById("student-notifications");
+        ul.innerHTML = "";
+        if (docs.length === 0) {
+          ul.innerHTML = `<li class="text-center text-gray-500 italic">No recent notifications</li>`;
+        } else {
+          docs.forEach((d) => {
+            const n = d.data();
+            const li = document.createElement("li");
+            li.className =
+              "bg-gray-50 border border-gray-200 rounded-lg p-3 fade-in";
+            li.innerHTML = `
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <div class="font-medium text-gray-800">${n.type}</div>
+                  <div class="text-sm text-gray-600">${
+                    n.message || "No message"
+                  }</div>
+                  <div class="text-xs text-gray-500 mt-1">${formatTimestamp(
+                    n.timestamp
+                  )}</div>
+                </div>
+                ${
+                  n.priority === "high"
+                    ? '<span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">High</span>'
+                    : ""
+                }
+              </div>
+            `;
+            ul.appendChild(li);
+          });
+        }
+      }
+      async function loadQuickStats() {
+        try {
+          const [eventsCount, scheduleCount, feedbackCount] = await Promise.all(
+            [
+              getDocs(
+                query(
+                  collection(db, "events"),
+                  where("start", ">=", new Date().toISOString())
+                )
+              ),
+              getDocs(
+                query(
+                  collection(db, "schedules"),
+                  where("userId", "==", currentUser.uid)
+                )
+              ),
+              getDocs(
+                query(
+                  collection(db, "feedback"),
+                  where("userId", "==", currentUser.uid)
+                )
+              ),
+            ]
+          );
+          const statsContainer =
+            document.querySelector("#dash .quick-stats") ||
+            document.createElement("div");
+          statsContainer.className = "quick-stats mt-4";
+          statsContainer.innerHTML = `
+            <div class="grid grid-cols-3 gap-4">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">${eventsCount.size}</div>
+                <div class="text-sm text-gray-600">Upcoming Events</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">${scheduleCount.size}</div>
+                <div class="text-sm text-gray-600">My Events</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-orange-600">${feedbackCount.size}</div>
+                <div class="text-sm text-gray-600">My Feedback</div>
+              </div>
+            </div>
+          `;
+          if (!document.querySelector("#dash .quick-stats")) {
+            document.querySelector("#dash").appendChild(statsContainer);
+          }
+        } catch (error) {
+          console.error("Error loading quick stats:", error);
+        }
+      }
+      async function loadBuildingsOnStudentMap() {
+        try {
+          mapMarkers.forEach((marker) => marker.setMap(null));
+          mapMarkers = [];
+          const snap = await getDocs(collection(db, "buildings"));
+          snap.forEach((d) => {
+            const b = d.data();
+            const marker = new google.maps.Marker({
+              position: { lat: b.lat, lng: b.lng },
+              map: studentMap,
+              title: b.name,
+              icon: {
+                url:
+                  b.iconUrl ||
+                  "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+                scaledSize: new google.maps.Size(32, 32),
+              },
+            });
+            marker.addListener("click", () => loadBuildingDetails(d.id, b));
+            mapMarkers.push(marker);
+          });
+          // Sync markers to main map
+          mapMarkers.forEach((m) => {
+            const mainMarker = new google.maps.Marker({
+              position: m.getPosition(),
+              map: mainMap,
+              title: m.getTitle(),
+              icon: m.getIcon(),
+            });
+            mainMarker.addListener("click", () => loadBuildingDetails(d.id, b));
+            mapMarkers.push(mainMarker);
+          });
+        } catch (error) {
+          console.error("Error loading buildings on map:", error);
+          showNotification("Failed to load buildings on map.", "error");
+        }
+      }
+      async function loadBuildingDetails(id, b) {
+        try {
+          document.getElementById("detail-name").textContent = b.name;
+          document.getElementById("detail-desc").textContent =
+            b.description || "No description available";
+          const floorplanLink = document.getElementById("detail-floorplan");
+          if (b.floorplanUrl) {
+            floorplanLink.href = b.floorplanUrl;
+            floorplanLink.style.display = "inline-block";
+          } else {
+            floorplanLink.style.display = "none";
+          }
+          const now = new Date();
+          const snap = await getDocs(
+            query(
+              collection(db, "events"),
+              where("building", "==", id),
+              where("start", ">=", now.toISOString()),
+              orderBy("start"),
+              limit(5)
+            )
+          );
+          const ul = document.getElementById("detail-upcoming-events");
+          ul.innerHTML = "";
+          if (snap.empty) {
+            ul.innerHTML = `<li class="text-center text-gray-500 italic">No upcoming events in this building</li>`;
+          } else {
+            snap.forEach((d) => {
+              const e = d.data();
+              const li = document.createElement("li");
+              li.className =
+                "bg-gray-50 border border-gray-200 rounded-lg p-3 fade-in";
+              li.innerHTML = `
+                <div class="font-medium text-gray-800">${e.title}</div>
+                <div class="text-sm text-gray-600">${formatTimestamp(
+                  e.start
+                )}</div>
+                ${
+                  e.description
+                    ? `<div class="text-xs text-gray-500 mt-1">${e.description}</div>`
+                    : ""
+                }
+              `;
+              ul.appendChild(li);
+            });
+          }
+          activateTab("detail");
+        } catch (error) {
+          console.error("Error loading building details:", error);
+          showNotification("Failed to load building details.", "error");
+        }
+      }
+      function updateEvents(docs) {
+        const ul = document.getElementById("event-list");
+        if (!ul) return;
+        ul.innerHTML = "";
+        if (docs.length === 0) {
+          ul.innerHTML = `<li class="text-center text-gray-500 italic">No events found</li>`;
+        } else {
+          docs.forEach((d) => {
+            const e = d.data();
+            const li = document.createElement("li");
+            li.className =
+              "bg-gray-50 border border-gray-200 rounded-lg p-3 flex justify-between items-center fade-in";
+            const eventDate = new Date(e.start);
+            const isPast = eventDate < new Date();
+            li.innerHTML = `
+              <div class="flex-1">
+                <div class="font-medium text-gray-800">${e.title}</div>
+                <div class="text-sm text-gray-600">${formatTimestamp(
+                  e.start
+                )}</div>
+                ${
+                  e.location
+                    ? `<div class="text-xs text-gray-500">📍 ${e.location}</div>`
+                    : ""
+                }
+                ${
+                  e.description
+                    ? `<div class="text-xs text-gray-500 mt-1">${e.description}</div>`
+                    : ""
+                }
+              </div>
+            `;
+            if (!isPast) {
+              const btn = document.createElement("button");
+              btn.textContent = "RSVP";
+              btn.className =
+                "bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors";
+              btn.onclick = () => rsvpEvent(d.id, e.title);
+              li.appendChild(btn);
+            } else {
+              const pastBadge = document.createElement("span");
+              pastBadge.textContent = "Past";
+              pastBadge.className =
+                "bg-gray-300 text-gray-600 px-2 py-1 rounded text-xs";
+              li.appendChild(pastBadge);
+            }
+            ul.appendChild(li);
+          });
+        }
+      }
+      async function loadAllEvents() {
+        try {
+          const snap = await getDocs(
+            query(collection(db, "events"), orderBy("start"))
+          );
+          updateEvents(snap.docs);
+        } catch (error) {
+          console.error("Error loading events:", error);
+          showNotification("Failed to load events.", "error");
+        }
+      }
+      async function rsvpEvent(eventId, title) {
+        try {
+          const existingRSVP = await getDocs(
+            query(
+              collection(db, "schedules"),
+              where("userId", "==", currentUser.uid),
+              where("eventId", "==", eventId)
+            )
+          );
+          if (!existingRSVP.empty) {
+            showNotification(
+              "You have already RSVP'd for this event.",
+              "warning"
+            );
+            return;
+          }
+          await addDoc(collection(db, "schedules"), {
+            userId: currentUser.uid,
+            eventId,
+            eventTitle: title,
+            timestamp: new Date().toISOString(),
+            status: "confirmed",
+          });
+          await addDoc(collection(db, "audit"), {
+            action: `RSVP'd for event: ${title}`,
+            user: currentUser.email,
+            userId: currentUser.uid,
+            timestamp: new Date().toISOString(),
+            type: "event_rsvp",
+          });
+          showNotification("RSVP successful!", "success");
+        } catch (error) {
+          console.error("Error RSVPing for event:", error);
+          showNotification("Failed to RSVP. Please try again.", "error");
+        }
+      }
+      function updateSchedule(docs) {
+        const ul = document.getElementById("schedule-list");
+        if (!ul) return;
+        ul.innerHTML = "";
+        if (docs.length === 0) {
+          ul.innerHTML = `<li class="text-center text-gray-500 italic">No events in your schedule</li>`;
+        } else {
+          docs.forEach((d) => {
+            const s = d.data();
+            const li = document.createElement("li");
+            li.className =
+              "bg-gray-50 border border-gray-200 rounded-lg p-3 flex justify-between items-center fade-in";
+            li.innerHTML = `
+              <div class="flex-1">
+                <div class="font-medium text-gray-800">${s.eventTitle}</div>
+                <div class="text-sm text-gray-600">${formatTimestamp(
+                  s.timestamp
+                )}</div>
+                <div class="text-xs text-gray-500">Status: ${
+                  s.status || "confirmed"
+                }</div>
+              </div>
+            `;
+            const btn = document.createElement("button");
+            btn.textContent = "Remove";
+            btn.className =
+              "bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors";
+            btn.onclick = () => removeFromSchedule(d.id);
+            li.appendChild(btn);
+            ul.appendChild(li);
+          });
+        }
+      }
+      async function loadSchedule() {
+        try {
+          const snap = await getDocs(
+            query(
+              collection(db, "schedules"),
+              where("userId", "==", currentUser.uid),
+              orderBy("timestamp", "desc")
+            )
+          );
+          updateSchedule(snap.docs);
+        } catch (error) {
+          console.error("Error loading schedule:", error);
+          showNotification("Failed to load schedule.", "error");
+        }
+      }
+      async function removeFromSchedule(scheduleId) {
+        if (confirm("Remove this event from your schedule?")) {
+          try {
+            await deleteDoc(doc(db, "schedules", scheduleId));
+            await addDoc(collection(db, "audit"), {
+              action: "Removed event from schedule",
+              user: currentUser.email,
+              userId: currentUser.uid,
+              timestamp: new Date().toISOString(),
+              type: "schedule_remove",
+            });
+            showNotification("Event removed from schedule.", "success");
+          } catch (error) {
+            console.error("Error removing from schedule:", error);
+            showNotification("Failed to remove event from schedule.", "error");
+          }
+        }
+      }
+      async function loadProfile() {
+        try {
+          if (!userProfile) return;
+          document.getElementById("profile-name").value =
+            userProfile.name || "";
+          document.getElementById("profile-phone").value =
+            userProfile.phone || "";
+          document.getElementById("profile-department").value =
+            userProfile.department || "";
+          document.getElementById("profile-level").value =
+            userProfile.level || "";
+          document.getElementById("profile-matric").value =
+            userProfile.matricNumber || "";
+          document.getElementById("profile-emergency").value =
+            userProfile.emergencyContact || "";
+          document.getElementById("profile-address").value =
+            userProfile.address || "";
+          document.getElementById("profile-language").value =
+            userProfile.language || "English";
+          document.getElementById("profile-contrast").checked =
+            userProfile.highContrast || false;
+          document.getElementById("profile-notifications").checked =
+            userProfile.pushNotifications !== false;
+          const profileInfo = document.getElementById("profile-info");
+          if (profileInfo) {
+            profileInfo.innerHTML = `
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="text-gray-600">Email: <span class="font-medium text-gray-800">${
+                  currentUser.email
+                }</span></div>
+                <div class="text-gray-600">Role: <span class="font-medium text-gray-800">${
+                  userProfile.role
+                }</span></div>
+                <div class="text-gray-600">Student ID: <span class="font-medium text-gray-800">${
+                  userProfile.studentId || "Not assigned"
+                }</span></div>
+                <div class="text-gray-600">Member since: <span class="font-medium text-gray-800">${formatTimestamp(
+                  userProfile.createdAt
+                )}</span></div>
+              </div>
+            `;
+          }
+        } catch (error) {
+          console.error("Error loading profile:", error);
+        }
+      }
+      async function generateStudentId() {
+        try {
+          const currentYear = new Date().getFullYear().toString().slice(-2);
+          const counterRef = doc(db, "counters", "studentIds");
+          const counterDoc = await getDoc(counterRef);
+          let nextNumber = 1;
+          if (counterDoc.exists()) {
+            nextNumber = counterDoc.data().currentNumber + 1;
+          }
+          await updateDoc(counterRef, {
+            currentNumber: nextNumber,
+            lastUpdated: new Date().toISOString(),
+          });
+          return `AFIT${currentYear}${nextNumber.toString().padStart(4, "0")}`;
+        } catch (error) {
+          console.error("Error generating student ID:", error);
+          return `AFIT${Date.now().toString().slice(-8)}`;
+        }
+      }
+      async function ensureStudentId() {
+        try {
+          if (!userProfile.studentId) {
+            const studentId = await generateStudentId();
+            await updateDoc(doc(db, "users", currentUser.uid), {
+              studentId: studentId,
+              lastUpdated: new Date().toISOString(),
+            });
+            userProfile.studentId = studentId;
+            await addDoc(collection(db, "audit"), {
+              action: `Assigned student ID: ${studentId}`,
+              user: currentUser.email,
+              userId: currentUser.uid,
+              timestamp: new Date().toISOString(),
+              type: "student_id_assignment",
+            });
+            showNotification(`Student ID assigned: ${studentId}`, "success");
+          }
+        } catch (error) {
+          console.error("Error ensuring student ID:", error);
+        }
+      }
+      function updateUserInterface() {
+        if (userProfile) {
+          const studentIdElement =
+            document.getElementById("profile-student-id");
+          if (studentIdElement) {
+            studentIdElement.textContent =
+              userProfile.studentId || "Not assigned";
+          }
+          if (userProfile.highContrast) {
+            document.body.classList.add("high-contrast");
+          } else {
+            document.body.classList.remove("high-contrast");
+          }
+        }
+      }
+      document.getElementById("btn-save-profile").onclick = async () => {
+        try {
+          const btn = document.getElementById("btn-save-profile");
+          btn.classList.add("loading");
+          btn.textContent = "Saving...";
+          const updates = {
+            name: document.getElementById("profile-name").value.trim(),
+            phone: document.getElementById("profile-phone").value.trim(),
+            department: document.getElementById("profile-department").value,
+            level: document.getElementById("profile-level").value,
+            matricNumber: document
+              .getElementById("profile-matric")
+              .value.trim(),
+            emergencyContact: document
+              .getElementById("profile-emergency")
+              .value.trim(),
+            address: document.getElementById("profile-address").value.trim(),
+            language: document.getElementById("profile-language").value,
+            highContrast: document.getElementById("profile-contrast").checked,
+            pushNotifications: document.getElementById("profile-notifications")
+              .checked,
+            lastUpdated: new Date().toISOString(),
+          };
+          if (!updates.name) {
+            showNotification("Name is required.", "error");
+            return;
+          }
+          if (
+            updates.matricNumber &&
+            !/^[A-Z]{2}\/\d{4}\/\d{3}$/.test(updates.matricNumber)
+          ) {
+            showNotification(
+              "Matric number should be in format: CS/2024/001",
+              "error"
+            );
+            return;
+          }
+          if (
+            updates.phone &&
+            !/^[\+]?[0-9\s\-\(\)]{10,}$/.test(updates.phone)
+          ) {
+            showNotification("Please enter a valid phone number.", "error");
+            return;
+          }
+          await updateDoc(doc(db, "users", currentUser.uid), updates);
+          await addDoc(collection(db, "audit"), {
+            action: "Updated profile",
+            user: currentUser.email,
+            userId: currentUser.uid,
+            timestamp: new Date().toISOString(),
+            type: "profile_update",
+            changes: Object.keys(updates).filter(
+              (key) => key !== "lastUpdated"
+            ),
+          });
+          showNotification("Profile updated successfully!", "success");
+          await loadProfile();
+        } catch (error) {
+          console.error("Error updating profile:", error);
+          showNotification(
+            "Failed to update profile. Please try again.",
+            "error"
+          );
+        } finally {
+          const btn = document.getElementById("btn-save-profile");
+          btn.classList.remove("loading");
+          btn.textContent = "Save Profile";
+        }
+      };
+      async function loadFeedbackHistory() {
+        try {
+          const snap = await getDocs(
+            query(
+              collection(db, "feedback"),
+              where("userId", "==", currentUser.uid),
+              orderBy("timestamp", "desc"),
+              limit(10)
+            )
+          );
+          feedbackList.innerHTML = "";
+          if (snap.empty) {
+            feedbackList.innerHTML = `<li class="text-center text-gray-500 italic">No feedback history</li>`;
+          } else {
+            snap.forEach((d) => {
+              const f = d.data();
+              const li = document.createElement("li");
+              li.className =
+                "feedback-card bg-gray-50 border border-gray-200 rounded-lg p-3";
+              li.innerHTML = `
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">${f.type}</div>
+                    <div class="text-sm text-gray-600">${f.feedback}</div>
+                    <div class="text-xs text-gray-500 mt-1">${formatTimestamp(
+                      f.timestamp
+                    )}</div>
+                  </div>
+                  <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${
+                    f.status || "Submitted"
+                  }</span>
+                </div>
+              `;
+              feedbackList.appendChild(li);
+            });
+          }
+        } catch (error) {
+          console.error("Error loading feedback history:", error);
+          showNotification("Failed to load feedback history.", "error");
+        }
+      }
+      document.getElementById("btn-feedback").onclick = async () => {
+        const type = document.getElementById("feedback-type").value;
+        const fb = document.getElementById("feedback-text").value.trim();
+        if (!type || !fb) {
+          showNotification("Please select a type and enter feedback", "error");
+          return;
+        }
+        if (fb.length < 10) {
+          showNotification(
+            "Feedback must be at least 10 characters long",
+            "error"
+          );
+          return;
+        }
+        try {
+          const btn = document.getElementById("btn-feedback");
+          btn.classList.add("loading");
+          btn.textContent = "Submitting...";
+          await addDoc(collection(db, "feedback"), {
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            type,
+            feedback: fb,
+            timestamp: new Date().toISOString(),
+            status: "pending",
+            priority:
+              type === "security" || type === "maintenance" ? "high" : "normal",
+          });
+          await addDoc(collection(db, "audit"), {
+            action: `Submitted ${type} feedback`,
+            user: currentUser.email,
+            userId: currentUser.uid,
+            timestamp: new Date().toISOString(),
+            type: "feedback_submit",
+          });
+          document.getElementById("feedback-type").value = "";
+          document.getElementById("feedback-text").value = "";
+          showNotification("Feedback submitted successfully!", "success");
+          loadFeedbackHistory();
+        } catch (error) {
+          console.error("Error submitting feedback:", error);
+          showNotification(
+            "Failed to submit feedback. Please try again.",
+            "error"
+          );
+        } finally {
+          const btn = document.getElementById("btn-feedback");
+          btn.classList.remove("loading");
+          btn.textContent = "Submit Feedback";
+        }
+      };
+      let searchTimeout;
+      document.getElementById("event-search").addEventListener("input", (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          const searchTerm = e.target.value.toLowerCase();
+          const events = document.querySelectorAll("#event-list li");
+          events.forEach((event) => {
+            const title = event.textContent.toLowerCase();
+            event.style.display = title.includes(searchTerm) ? "" : "none";
+          });
+        }, 300);
+      });
+      document.getElementById("btn-report-issue").onclick = () => {
+        activateTab("feedback");
+        document.getElementById("feedback-type").value = "maintenance";
+      };
+      document.getElementById("btn-find-building").onclick = () => {
+        activateTab("map");
+      };
+      function formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffInHours = (now - date) / (1000 * 60 * 60);
+        if (diffInHours < 24) {
+          return date.toLocaleTimeString();
+        } else if (diffInHours < 168) {
+          return date.toLocaleDateString();
+        } else {
+          return date.toLocaleDateString();
+        }
+      }
+      function getTimeUntil(date) {
+        const now = new Date();
+        const diff = date - now;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor(
+          (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        );
+        if (days > 0) {
+          return `${days} day${days > 1 ? "s" : ""} away`;
+        } else if (hours > 0) {
+          return `${hours} hour${hours > 1 ? "s" : ""} away`;
+        } else {
+          return "Starting soon";
+        }
+      }
+      function showNotification(message, type = "info") {
+        const colors = {
+          success: "bg-green-500",
+          error: "bg-red-500",
+          warning: "bg-yellow-500",
+          info: "bg-blue-500",
+        };
+        const notification = document.createElement("div");
+        notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 fade-in`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+          notification.remove();
+        }, 5000);
+      }
+      function showLoadingState(show) {
+        const loadingOverlay = document.getElementById("loading-overlay");
+        if (show) {
+          if (!loadingOverlay) {
+            const overlay = document.createElement("div");
+            overlay.id = "loading-overlay";
+            overlay.className =
+              "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+            overlay.innerHTML = `
+              <div class="bg-white rounded-lg p-6">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <div class="mt-2 text-gray-600">Loading...</div>
+              </div>
+            `;
+            document.body.appendChild(overlay);
+          }
+        } else {
+          if (loadingOverlay) {
+            loadingOverlay.remove();
+          }
+        }
+      }
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("/service-worker.js")
+          .catch((error) => {
+            console.error("Service Worker registration failed:", error);
+          });
+      }
+      window.addEventListener("beforeunload", () => {
+        cleanupListeners();
+      });
+    </script>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyADrTuJRmbHBeQFXvU2BG-l6LAkG2yMr7g&callback=initMap"
+      async
+      defer
+    ></script>
+  </body>
+</html>
